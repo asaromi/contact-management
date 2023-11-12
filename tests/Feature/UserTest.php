@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Database\Seeders\UserSeeder;
 use Tests\TestCase;
 
 class UserTest extends TestCase
@@ -44,11 +46,35 @@ class UserTest extends TestCase
             'password' => 'yang laen',
             'name' => 'Agak Laen'
         ])
-        ->assertStatus(400)
-        ->assertJson([
-            'errors' => [
-                'username' => ['The username has already been taken.']
-            ]
-        ]);
+            ->assertStatus(400)
+            ->assertJson([
+                'errors' => [
+                    'username' => ['The username has already been taken.']
+                ]
+            ]);
+    }
+
+    public function testLoginSuccess()
+    {
+        $this->seed(UserSeeder::class);
+        $this->post('/api/users/login', [
+            'username' => 'test-username',
+            'password' => 'testPassword',
+        ])
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'username' => 'test-username',
+                    'name' => 'Testing User'
+                ]
+            ]);
+
+        $user_token = User::where('username', 'test-username')->value('token');
+        self::assertNotNull($user_token);
+    }
+
+    public function testLoginFailed()
+    {
+
     }
 }
