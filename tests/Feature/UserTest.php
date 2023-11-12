@@ -8,6 +8,16 @@ use Tests\TestCase;
 
 class UserTest extends TestCase
 {
+    private function getTestUser()
+    {
+        $query = User::query()->where('username', 'test-username');
+        if (!$query->exists()) {
+            $this->seed([UserSeeder::class]);
+        }
+
+        return $query->first();
+    }
+
     public function testRegisterSuccess()
     {
         $this->post('/api/users', [
@@ -56,25 +66,53 @@ class UserTest extends TestCase
 
     public function testLoginSuccess()
     {
-        $this->seed(UserSeeder::class);
+        $user = $this->getTestUser();
+
         $this->post('/api/users/login', [
-            'username' => 'test-username',
+            'username' => $user->username,
             'password' => 'testPassword',
         ])
             ->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'username' => 'test-username',
-                    'name' => 'Testing User'
+                    'username' => $user->username,
+                    'name' => $user->name
                 ]
             ]);
 
-        $user_token = User::where('username', 'test-username')->value('token');
-        self::assertNotNull($user_token);
+        $user->refresh();
+        self::assertNotNull($user->token);
     }
 
-    public function testLoginFailed()
+    public function testLoginFailedUsernameNotFound()
     {
+        $user = $this->getTestUser();
 
+        $this->post('/api/users/login', [
+            'username' => 'User sok asik', // not found username
+            'password' => 'testPassword123', // unmatched password
+        ])
+            ->assertStatus(401)
+            ->assertJson([
+                'errors' => [
+                    'message' => ['username or password wrong']
+                ]
+            ]);
+    }
+
+    public function testLoginFailedWrongPassword()
+    {
+        $user = $this->getTestUser();
+
+        $this->post('/api/users/login', [
+            'username' => $user->username,
+            'password' => 'testPassword123', // unmatched password
+        ])
+            ->assertStatus(401)
+            ->assertJson([
+                'errors' => [
+                    'message' => ['username or password wrong']
+                ]
+            ]);
     }
 }
