@@ -15,7 +15,5 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', fn() => ['message' => 'Hello World!']);
-
-Route::group(['prefix' => 'users'], function () {
-    Route::post('/', [\App\Http\Controllers\UserController::class, 'register']);
-});
+Route::post('/users', [\App\Http\Controllers\UserController::class, 'register']);
+Route::post('/users/login', [\App\Http\Controllers\UserController::class, 'login']);
