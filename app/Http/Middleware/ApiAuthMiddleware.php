@@ -23,20 +23,20 @@ class ApiAuthMiddleware
 
         if (!$token) $authenticate = false;
         else {
-            $user = User::query()->where('token', $token)->first()->makeHidden('token');
+            $user = User::where('token', $token)->first();
 
             if (!$user) $authenticate = false;
         }
 
         if (!$authenticate) {
             return response()->json([
-                'error' => [
+                'errors' => [
                     'message' => ['Unauthorized']
                 ]
             ])->setStatusCode('401');
         }
 
-        Auth::login($user);
+        Auth::login($user->makeHidden('token'));
         return $next($request);
     }
 }
