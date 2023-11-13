@@ -8,9 +8,9 @@ use Tests\TestCase;
 
 class UserTest extends TestCase
 {
-    private function getTestUser()
+    private function getTestUser(string $username): User
     {
-        $query = User::query()->where('username', 'test-username');
+        $query = User::where('username', $username);
         if (!$query->exists()) {
             $this->seed([UserSeeder::class]);
         }
@@ -21,14 +21,14 @@ class UserTest extends TestCase
     public function testRegisterSuccess()
     {
         $this->post('/api/users', [
-            'username' => 'anjay name',
+            'username' => 'anuuuu',
             'password' => 'rahasia',
             'name' => 'Asa Romi'
         ])
             ->assertStatus(201)
             ->assertJson([
                 'data' => [
-                    'username' => 'anjay name',
+                    'username' => 'anuuuu',
                     'name' => 'Asa Romi'
                 ],
             ]);
@@ -50,7 +50,7 @@ class UserTest extends TestCase
 
     public function testRegisterUsernameAlreadyExists()
     {
-        $this->testRegisterSuccess();
+//        $this->testRegisterSuccess();
         $this->post('/api/users', [
             'username' => 'anjay name',
             'password' => 'yang laen',
@@ -66,10 +66,10 @@ class UserTest extends TestCase
 
     public function testLoginSuccess()
     {
-        $user = $this->getTestUser();
+        $user = $this->getTestUser('test-username');
 
         $this->post('/api/users/login', [
-            'username' => $user->username,
+            'username' => 'test-username',
             'password' => 'testPassword',
         ])
             ->assertStatus(200)
@@ -86,7 +86,7 @@ class UserTest extends TestCase
 
     public function testLoginFailedUsernameNotFound()
     {
-        $user = $this->getTestUser();
+        $user = $this->getTestUser('test-username');
 
         $this->post('/api/users/login', [
             'username' => 'User sok asik', // not found username
@@ -102,16 +102,55 @@ class UserTest extends TestCase
 
     public function testLoginFailedWrongPassword()
     {
-        $user = $this->getTestUser();
+        $user = $this->getTestUser('test-username');
 
         $this->post('/api/users/login', [
-            'username' => $user->username,
+            'username' => 'test-username',
             'password' => 'testPassword123', // unmatched password
         ])
             ->assertStatus(401)
             ->assertJson([
                 'errors' => [
                     'message' => ['username or password wrong']
+                ]
+            ]);
+    }
+
+    public function testGetSuccess()
+    {
+        $user = $this->getTestUser('test-username');
+        $this->get('/api/users/current', [
+            'Authorization' => $user->token
+        ])
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'username' => 'test-username',
+                    'name' => 'Testing User'
+                ]
+            ]);
+    }
+
+    public function testGetUnauthorized()
+    {
+        $this->get('/api/users/current')
+            ->assertStatus(401)
+            ->assertJson([
+                'errors' => [
+                    'message' => ['Unauthorized']
+                ]
+            ]);
+    }
+
+    public function testGetInvalidToken()
+    {
+        $this->get('/api/users/current', [
+            'Authorization' => 'token'
+        ])
+            ->assertStatus(401)
+            ->assertJson([
+                'errors' => [
+                    'message' => ['Unauthorized']
                 ]
             ]);
     }
