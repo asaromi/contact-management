@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    public function register(UserRegisterRequest $request) : JsonResponse
+    public function register(UserRegisterRequest $request): JsonResponse
     {
         $data = $request->validated();
 
@@ -26,14 +26,14 @@ class UserController extends Controller
         return (new UserResource($user))->response()->setStatusCode(201);
     }
 
-    public function login(UserLoginRequest $request) : UserResource
+    public function login(UserLoginRequest $request): UserResource
     {
         $data = $request->validated();
 
         $user = User::where('username', $data['username'])->first();
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            throw new \HttpResponseException(response([
-                'error' => [
+            throw new HttpResponseException(response([
+                'errors' => [
                     'message' => ['username or password wrong']
                 ]
             ], 401));
@@ -42,6 +42,12 @@ class UserController extends Controller
         $user->token = Str::uuid()->toString();
         $user->save();
 
+        return new UserResource($user);
+    }
+
+    public function get(Request $request): UserResource
+    {
+        $user = Auth::user();
         return new UserResource($user);
     }
 }
